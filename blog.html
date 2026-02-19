@@ -448,12 +448,34 @@ html.theme-transition *::after {
   justify-content: space-between;
 }
 
+.bar-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bar-row-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
 .bar-track {
-  height: 32px;
+  height: 26px;
   background: var(--bar-track-bg);
   border-radius: 6px;
   overflow: hidden;
   position: relative;
+  flex: 1;
 }
 
 .bar-fill {
@@ -681,7 +703,7 @@ html.theme-transition *::after {
 .conv-annot-arrow { stroke: var(--accent); stroke-width: 1.5; fill: none; }
 .conv-annot-vline { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 2 2; opacity: 0.6; }
 .conv-arrowhead { fill: var(--accent); stroke: none; }
-.conv-annot-text { fill: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; }
+.conv-annot-text { fill: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; }
 
 .chart-legend {
   display: flex;
@@ -1056,7 +1078,7 @@ footer a {
 <section id="approach">
   <div class="section-label">02 — The Approach</div>
   <h2>Neural Cellular Automata as synthetic fuel</h2>
-  <p><strong>Neural cellular automata (NCA)</strong> generalize systems like Conway's Game of Life by replacing fixed rules with neural networks. Each randomly-sampled network defines a unique transition rule, producing diverse spatiotemporal dynamics on a grid — from simple patterns that converge to a fixed attractor state to complex, swirling structures.</p>
+  <p><strong>Neural cellular automata (NCA) generalize systems like Conway's Game of Life by replacing fixed rules with neural networks. Each randomly-sampled network defines a unique transition rule, producing diverse spatiotemporal dynamics on a grid. When unrolled over long horizons, these dynamics give rise to a rich spectrum of behaviors — from simple patterns that converge to a fixed attractor state to complex structures that emerge gradually over time.</p>
 
   <!-- Interactive NCA Demo -->
   <div class="nca-demo">
@@ -1101,7 +1123,7 @@ footer a {
       <div class="step-box">
         <div class="step-num">Stage 2</div>
         <div class="step-title">Pre-train</div>
-        <div class="step-desc">Natural language<br>Web, math, code</div>
+        <div class="step-desc">Natural language<br>Web, math, code (4-13B tokens)</div>
       </div>
     </div>
     <div class="pipeline-arrow">→</div>
@@ -1119,7 +1141,7 @@ footer a {
 <section id="results">
   <div class="section-label">03 — Results</div>
   <h2>The surprising payoff</h2>
-  <p>Under matched token budgets (164M tokens each), NCA pre-pre-training consistently <strong>beats both training from scratch and pre-pre-training on natural language (C4)</strong> — across web text, math, and code. The gains aren't just better final perplexity; models converge significantly faster.</p>
+  <p>Under matched token budgets (164M tokens each), NCA pre-pre-training consistently <strong>outperforms both from-scratch training and pre-pre-training on natural language (C4)</strong> across web text, math, and code. The gains aren't just better convergence speed, but also better final perplexity.</p>
 
   <div class="chart-wrapper" id="ppl-chart">
     <h4>Final Perplexity by Domain (↓ lower is better)</h4>
@@ -1230,26 +1252,26 @@ footer a {
     <h4>Reasoning Benchmark Performance (pass@1 accuracy)</h4>
     <div class="bar-group">
       <div class="bar-label"><span>GSM8K (Math)</span></div>
-      <div style="display:flex;gap:4px">
-        <div class="bar-track" style="flex:1"><div class="bar-fill c4" data-width="38.1%" style="justify-content:center">3.81%</div></div>
-        <div class="bar-track" style="flex:1"><div class="bar-fill scratch" data-width="38.2%" style="justify-content:center"><span>3.82%</span></div></div>
-        <div class="bar-track" style="flex:1"><div class="bar-fill nca" data-width="43.6%" style="justify-content:center">4.36%</div></div>
+      <div class="bar-rows">
+        <div class="bar-row"><span class="bar-row-label">Scr</span><div class="bar-track"><div class="bar-fill scratch" data-width="87.6%" style="justify-content:flex-end;padding-right:10px"><span>3.82%</span></div></div></div>
+        <div class="bar-row"><span class="bar-row-label">C4</span><div class="bar-track"><div class="bar-fill c4" data-width="87.4%" style="justify-content:flex-end;padding-right:10px">3.81%</div></div></div>
+        <div class="bar-row"><span class="bar-row-label">NCA</span><div class="bar-track"><div class="bar-fill nca" data-width="100%" style="justify-content:flex-end;padding-right:10px">4.36%</div></div></div>
       </div>
     </div>
     <div class="bar-group">
       <div class="bar-label"><span>HumanEval (Code)</span></div>
-      <div style="display:flex;gap:4px">
-        <div class="bar-track" style="flex:1"><div class="bar-fill c4" data-width="62.7%" style="justify-content:center">6.27%</div></div>
-        <div class="bar-track" style="flex:1"><div class="bar-fill scratch" data-width="67.5%" style="justify-content:center"><span>6.75%</span></div></div>
-        <div class="bar-track" style="flex:1"><div class="bar-fill nca" data-width="74.9%" style="justify-content:center">7.49%</div></div>
+      <div class="bar-rows">
+        <div class="bar-row"><span class="bar-row-label">Scr</span><div class="bar-track"><div class="bar-fill scratch" data-width="90.1%" style="justify-content:flex-end;padding-right:10px"><span>6.75%</span></div></div></div>
+        <div class="bar-row"><span class="bar-row-label">C4</span><div class="bar-track"><div class="bar-fill c4" data-width="83.7%" style="justify-content:flex-end;padding-right:10px">6.27%</div></div></div>
+        <div class="bar-row"><span class="bar-row-label">NCA</span><div class="bar-track"><div class="bar-fill nca" data-width="100%" style="justify-content:flex-end;padding-right:10px">7.49%</div></div></div>
       </div>
     </div>
     <div class="bar-group">
       <div class="bar-label"><span>BigBench-Lite (Reasoning)</span></div>
-      <div style="display:flex;gap:4px">
-        <div class="bar-track" style="flex:1"><div class="bar-fill scratch" data-width="86%" style="justify-content:center"><span>23.25%</span></div></div>
-        <div class="bar-track" style="flex:1"><div class="bar-fill c4" data-width="89%" style="justify-content:center">24.46%</div></div>
-        <div class="bar-track" style="flex:1"><div class="bar-fill nca" data-width="92%" style="justify-content:center">25.95%</div></div>
+      <div class="bar-rows">
+        <div class="bar-row"><span class="bar-row-label">Scr</span><div class="bar-track"><div class="bar-fill scratch" data-width="89.6%" style="justify-content:flex-end;padding-right:10px"><span>23.25%</span></div></div></div>
+        <div class="bar-row"><span class="bar-row-label">C4</span><div class="bar-track"><div class="bar-fill c4" data-width="94.3%" style="justify-content:flex-end;padding-right:10px">24.46%</div></div></div>
+        <div class="bar-row"><span class="bar-row-label">NCA</span><div class="bar-track"><div class="bar-fill nca" data-width="100%" style="justify-content:flex-end;padding-right:10px">25.95%</div></div></div>
       </div>
     </div>
     <div class="chart-legend">
@@ -1259,7 +1281,7 @@ footer a {
     </div>
   </div>
 
-  <p>Surprisingly, we observe that our non-linguistic NCA data outperforms natural language at equal scale. So, we investigate further: what happens if we give C4 <strong>~10× more data</strong>? We scale C4 pre-pre-training to 1.6B tokens while keeping NCA at 164M. Even with this data advantage, NCA still converges 1.4x faster and achieves 5% better final perplexity.</p>
+  <p>Surprisingly, we observe that our non-linguistic NCA data outperforms natural language at equal scale. So, we investigate further: what happens if we give C4 <strong>~10× more data</strong>? We scale C4 pre-pre-training to 1.6B tokens while keeping NCA at 164M. Even with this data advantage, NCA still <strong></strong>converges 1.4x faster and achieves 5% better final perplexity </strong>.</p>
 
   <div class="chart-wrapper" id="scale-chart">
     <h4>OpenWebText: NCA (160M tokens) vs C4 (1.6B tokens)</h4>
@@ -1368,15 +1390,15 @@ footer a {
   <h2>A purer training signal</h2>
   <p>At small token budgets, natural language pre-pre-training mostly teaches <strong>shallow syntactic patterns</strong> — subject-verb agreement, local co-occurrences — rather than deep structure. These surface-level regularities can even <em>interfere</em> with downstream learning.</p>
   <p>NCA sequences offer something different. Each trajectory is generated by a <strong>single latent rule</strong> that the model must discover from context and apply consistently. There's no surface-level shortcut — the model is forced to internalize genuine in-context learning. And since every NCA has a unique rule, the data is inherently diverse in a way that natural language (with its massive redundancy) often isn't.</p>
-  <p>Think of it like this: rather than learning to mimic patterns in text, the model learns <strong>how to figure out the rules of a game it's never seen before</strong> — and that meta-skill transfers remarkably well to language.</p>
+  <p>To put another way, rather than learning to mimic patterns in text, the model learns <strong>how to figure out the rules of a game it's never seen before</strong> — and that meta-skill transfers remarkably well to language.</p>
 </section>
 
 <!-- IMPLICATIONS -->
 <section id="implications">
   <div class="section-label">06 — The Big Picture</div>
   <h2>Beyond one-size-fits-all</h2>
-  <p>This work opens a fundamentally new axis of control for training language models. Instead of treating the training distribution as fixed, we can <strong>tune the structure of synthetic data to match target domains</strong>. Code needs rigid state-tracking? Use simpler NCA rules. Math needs complex long-range reasoning? Crank up the complexity.</p>
-  <p>The long-term vision: <strong>foundation models that acquire reasoning from fully synthetic data</strong>, then learn semantics from a small, curated corpus of natural language — decoupling what models learn from where they learn it. Models that reason without inheriting human biases from inception.</p>
+  <p>This work opens a fundamentally new axis of control for training language models. Instead of treating the training distribution as fixed, we can <strong>tune the structure of synthetic data to match target domains</strong>. Simpler NCA rules for code, and richer long-range dynamics for genomic sequence modeling.</p>
+  <p>The long-term vision is: <strong>foundation models that acquire reasoning from fully synthetic data</strong>, then learn semantics from a small, curated corpus of natural language. This would help us build models that reason without inheriting human biases from inception.</p>
   <div class="callout">
     The question is no longer <em>whether</em> synthetic pre-training can work, but <em>how far it can go.</em>
   </div>
@@ -1558,9 +1580,9 @@ class SimpleNCA {
     }
     // Random weights for a simple rule
     this.weights = [];
-    const numW = this.complexity === 'low' ? 3 : this.complexity === 'mid' ? 8 : 15;
+    const numW = this.complexity === 'low' ? 5 : this.complexity === 'mid' ? 6 : 15;
     for (let i = 0; i < numW; i++) {
-      this.weights.push((Math.random() - 0.5) * (this.complexity === 'low' ? 1 : this.complexity === 'mid' ? 3 : 6));
+      this.weights.push((Math.random() - 0.5) * (this.complexity === 'low' ? 1.5 : this.complexity === 'mid' ? 2 : 6));
     }
   }
   step() {
@@ -1578,10 +1600,10 @@ class SimpleNCA {
           }
         }
         if (this.complexity === 'low') {
-          // Very regular: tends to freeze
-          next[y][x] = Math.abs(Math.round(sum * 0.1)) % 10;
+          // Regular: settles to a simple stable pattern
+          next[y][x] = Math.abs(Math.round(sum * 0.15 + this.grid[y][x] * 0.3)) % 10;
         } else if (this.complexity === 'mid') {
-          next[y][x] = Math.abs(Math.round(sum * 0.3 + this.grid[y][x])) % 10;
+          next[y][x] = Math.abs(Math.round(sum * 0.2 + this.grid[y][x] * 0.7)) % 10;
         } else {
           next[y][x] = Math.abs(Math.round(sum * 0.5 + this.grid[y][x] * 0.7 + Math.sin(sum) * 2)) % 10;
         }
