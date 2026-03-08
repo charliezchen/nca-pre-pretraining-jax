@@ -494,6 +494,7 @@ html.theme-transition *::after {
 
 .bar-fill.nca { background: var(--accent); }
 .bar-fill.c4 { background: var(--accent2); }
+.bar-fill.dyck { background: var(--accent3); }
 .bar-fill.scratch { background: var(--bar-scratch-bg); }
 .bar-fill.scratch span { color: var(--bar-scratch-text); }
 
@@ -876,6 +877,7 @@ html.theme-transition *::after {
 
 [data-theme="light"] .bar-fill.nca { background: #4a9e12; color: #fff; }
 [data-theme="light"] .bar-fill.c4 { background: #0a8a9e; color: #fff; }
+[data-theme="light"] .bar-fill.dyck { background: #b87020; color: #fff; }
 [data-theme="light"] .hero-stat .number { color: var(--accent); }
 [data-theme="light"] .callout em { color: var(--accent); }
 
@@ -1249,34 +1251,38 @@ footer a {
   <p>These language modeling gains transfer to <strong>real reasoning benchmarks</strong>:</p>
 
   <div class="chart-wrapper" id="bench-chart">
-    <h4>Reasoning Benchmark Performance (pass@1 accuracy)</h4>
+    <h4>Reasoning Benchmark Performance</h4>
     <div class="bar-group">
-      <div class="bar-label"><span>GSM8K (Math)</span></div>
+      <div class="bar-label"><span>GSM8K (Math) (pass@1 accuracy)</span></div>
       <div class="bar-rows">
         <div class="bar-row"><span class="bar-row-label">Scr</span><div class="bar-track"><div class="bar-fill scratch" data-width="87.6%" style="justify-content:flex-end;padding-right:10px"><span>3.82%</span></div></div></div>
         <div class="bar-row"><span class="bar-row-label">C4</span><div class="bar-track"><div class="bar-fill c4" data-width="87.4%" style="justify-content:flex-end;padding-right:10px">3.81%</div></div></div>
+        <div class="bar-row"><span class="bar-row-label">Dyck</span><div class="bar-track"><div class="bar-fill dyck" data-width="94.0%" style="justify-content:flex-end;padding-right:10px">4.10%</div></div></div>
         <div class="bar-row"><span class="bar-row-label">NCA</span><div class="bar-track"><div class="bar-fill nca" data-width="100%" style="justify-content:flex-end;padding-right:10px">4.36%</div></div></div>
       </div>
     </div>
     <div class="bar-group">
-      <div class="bar-label"><span>HumanEval (Code)</span></div>
+      <div class="bar-label"><span>HumanEval (Code) (pass@1 accuracy)</span></div>
       <div class="bar-rows">
         <div class="bar-row"><span class="bar-row-label">Scr</span><div class="bar-track"><div class="bar-fill scratch" data-width="90.1%" style="justify-content:flex-end;padding-right:10px"><span>6.75%</span></div></div></div>
         <div class="bar-row"><span class="bar-row-label">C4</span><div class="bar-track"><div class="bar-fill c4" data-width="83.7%" style="justify-content:flex-end;padding-right:10px">6.27%</div></div></div>
+        <div class="bar-row"><span class="bar-row-label">Dyck</span><div class="bar-track"><div class="bar-fill dyck" data-width="92.1%" style="justify-content:flex-end;padding-right:10px">6.90%</div></div></div>
         <div class="bar-row"><span class="bar-row-label">NCA</span><div class="bar-track"><div class="bar-fill nca" data-width="100%" style="justify-content:flex-end;padding-right:10px">7.49%</div></div></div>
       </div>
     </div>
     <div class="bar-group">
-      <div class="bar-label"><span>BigBench-Lite (Reasoning)</span></div>
+      <div class="bar-label"><span>BigBench-Lite (Reasoning) (normalized accuracy pass@2)</span></div>
       <div class="bar-rows">
-        <div class="bar-row"><span class="bar-row-label">Scr</span><div class="bar-track"><div class="bar-fill scratch" data-width="89.6%" style="justify-content:flex-end;padding-right:10px"><span>23.25%</span></div></div></div>
-        <div class="bar-row"><span class="bar-row-label">C4</span><div class="bar-track"><div class="bar-fill c4" data-width="94.3%" style="justify-content:flex-end;padding-right:10px">24.46%</div></div></div>
-        <div class="bar-row"><span class="bar-row-label">NCA</span><div class="bar-track"><div class="bar-fill nca" data-width="100%" style="justify-content:flex-end;padding-right:10px">25.95%</div></div></div>
+        <div class="bar-row"><span class="bar-row-label">Dyck</span><div class="bar-track"><div class="bar-fill dyck" data-width="68.3%" style="justify-content:flex-end;padding-right:10px">18.10%</div></div></div>
+        <div class="bar-row"><span class="bar-row-label">Scr</span><div class="bar-track"><div class="bar-fill scratch" data-width="78.9%" style="justify-content:flex-end;padding-right:10px"><span>20.91%</span></div></div></div>
+        <div class="bar-row"><span class="bar-row-label">C4</span><div class="bar-track"><div class="bar-fill c4" data-width="85.9%" style="justify-content:flex-end;padding-right:10px">22.76%</div></div></div>
+        <div class="bar-row"><span class="bar-row-label">NCA</span><div class="bar-track"><div class="bar-fill nca" data-width="100%" style="justify-content:flex-end;padding-right:10px">26.51%</div></div></div>
       </div>
     </div>
     <div class="chart-legend">
       <span><span class="dot" style="background:var(--bar-scratch-bg)"></span>Scratch</span>
       <span><span class="dot" style="background:var(--accent2)"></span>C4</span>
+      <span><span class="dot" style="background:var(--accent3)"></span>Dyck</span>
       <span><span class="dot" style="background:var(--accent)"></span>NCA</span>
     </div>
   </div>
@@ -1412,9 +1418,8 @@ footer a {
     <button class="copy-btn" onclick="copyBibtex()" id="copy-btn">Copy</button>
 <pre id="bibtex-text">@inproceedings{placeholder2026nca,
   title={Training Language Models via Neural Cellular Automata},
-  author={TBD},
-  booktitle={Proceedings of the International Conference
-             on Machine Learning (ICML)},
+  author={Seungwook Han and Dan Lee and Akarsh Kumar and Pulkit Agrawal},
+  booktitle={TBD,
   year={2026}
 }</pre>
   </div>

@@ -1,28 +1,28 @@
 #!/bin/bash
-echo "Running CodeParrot Fine-Tuning Script..."
+echo "Running GSM8K Math Fine-Tuning Script..."
 MODEL_PATH=PATH_TO_PT_MODEL
 MODEL_FILE=MODEL_FILE_PATH_RECOMMEND_10_CHECKPOINT
 SAVE_DIR=DIRECTORY_TO_SAVE_MODELS
-DATA_DIR=DIRECTORY_TO_DATA
 
-python src/language_ft.py \
-    --seed 5 \
+python src/language_train.py \
+    --seed 0 \
     --device cuda:0 \
-    --data_dir $DATA_DIR \
-    --wandb_project PROJECT_NAME \
-    --wandb_name RUN_NAME \
-    --pretrain 1 \
     --save_path $SAVE_DIR \
     --model_path $MODEL_PATH \
     --model_file $MODEL_FILE \
+    --wandb_project GSM8K \
+    --wandb_name RUN_NAME \
+    --wandb_enable \
+    --pretrain 1 \
     --pt_vocab_size 64000 \
+    --vocab_size 64000 \
     --reinit_modules embed none \
+    --reinit_layer_idxs 0 24 \
     --seq_len 1024 \
-    --lr 2e-4 \
-    --epochs 1 \
-    --warmup 750 \
-    --val_freq 3000 \
-    --save_freq 500 \
+    --lr 1e-5 \
+    --epochs 10 \
+    --warmup 0.1 \
+    --val_freq 14 \
     --patience -1 \
     --log_grad \
     --log_grad_freq 100 \
@@ -31,8 +31,9 @@ python src/language_ft.py \
     --batch_size 16 \
     --mixed_precision fp16 \
     --autocast \
-    --task full-codeparrot \
-    --eval_enable \
+    --task gsm8k \
     --grad_accumulation_steps 32 \
-    --resume \
-    --wandb_enable
+    --eval_enable \
+    --interval_save \
+    --intervals 70 140 \
+    --resume

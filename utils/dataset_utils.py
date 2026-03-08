@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 
 sys.path.append(".")
 sys.path.append("..")
@@ -209,6 +210,8 @@ class BaseSequenceDataset(Dataset):
 
 
 ### ===== BIGBENCH DATASET ===== ###
+MC_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
+
 BIGBENCH_LITE = tasks = [
     "auto_debugging",
     "bbq_lite_json",
@@ -237,29 +240,27 @@ BIGBENCH_LITE = tasks = [
 ]
 
 BIGBENCH_LITE_ENGLISH = tasks = [
-    "auto_debugging",
-    "bbq_lite_json",
-    "code_line_description",
-    "conceptual_combinations",
-    "emoji_movie",
-    "formal_fallacies_syllogisms_negation", 
-    "known_unknowns",
-    "linguistics_puzzles",
-    "logic_grid_puzzle",
-    "logical_deduction",
-    "novel_concepts",
-    "operators",
-    "play_dialog_same_or_different",
-    "repeat_copy_logic",
-    "strange_stories",
-    "strategyqa",
-    "symbol_interpretation",
-    "vitaminc_fact_verification",
-    "winowhy"
+    "auto_debugging", # < 100
+    "bbq_lite_json", # 16.1k
+    "code_line_description", # 60
+    "conceptual_combinations", # 84
+    "emoji_movie", # <100
+    "formal_fallacies_syllogisms_negation", # 11.4k
+    "known_unknowns", #  < 100
+    "logic_grid_puzzle", # 800
+    "logical_deduction", # 1.2k
+    "novel_concepts", # 32 rows
+    "operators", # 168
+    "play_dialog_same_or_different", # 2.61k
+    "repeat_copy_logic", # < 100
+    "strange_stories", # 140
+    "strategyqa", # 1.83k
+    "symbol_interpretation", # 795
+    "vitaminc_fact_verification", #43.7k
+    "winowhy" # 2.29k
 ]
 
-class BigBenchDataset(BaseSequenceDataset):
-    """BigBench evaluation dataset with in-context learning"""
+class BigBenchDataset(Dataset):
     def __init__(self,
         dataset=None,
         split='train',
@@ -269,15 +270,19 @@ class BigBenchDataset(BaseSequenceDataset):
         train_enable: bool = False,
         seq_len: int = 1024,
         eval: bool = False,
-        seed: int = 42
+        seed: int = 42,
+        few_shot_prompts_path: str = None,
+        mc_letter_format: bool = False,  # For logprob MC eval: use A/B/C/D letters instead of full text
     ):
-        super().__init__(max_seq_len=seq_len)
+        super().__init__()
 
         self.shot = shot
         self.train_enable = train_enable
         self.eval = eval
+        self.seq_len = seq_len
         self.seed = seed
         self.rng = np.random.default_rng(seed)
+        self.mc_letter_format = mc_letter_format
 
         if dataset is None:
             self.dataset = get_bigbench_dataset(split=split, subsets=subsets)
@@ -288,104 +293,194 @@ class BigBenchDataset(BaseSequenceDataset):
         self.tokenizer = tokenizer if tokenizer is not None else tiktoken.get_encoding("gpt2")
         if tokenizer is None: self.eos = self.tokenizer.eot_token
         else: self.eos = self.tokenizer.eos_token_id
+
+        # Load fixed few-shot prompts if provided
+        self.few_shot_prompts = None
+        if few_shot_prompts_path is not None:
+            with open(few_shot_prompts_path, 'r') as f:
+                self.few_shot_prompts = json.load(f)
+            log.info(f"Loaded fixed few-shot prompts from {few_shot_prompts_path}")
+            for task_name in self.subsets:
+                n = len(self.few_shot_prompts.get(task_name, []))
+                if n > 0:
+                    log.info(f"  {task_name}: {n} fixed few-shot examples")
+                else:
+                    log.info(f"  {task_name}: no fixed prompts, will use random sampling")
+
         # preprocessing
         self.enumerated_examples = [] # list of examples in format of (task_name, example_idx)
         for subset in self.subsets:
             for example in self.dataset[subset]:
-                self.enumerated_examples.append((subset, example))        
+                self.enumerated_examples.append((subset, example))
+
+    def get_num_choices(self, example):
+        """Return number of multiple choice options (0 if free response)."""
+        return len(example.get('multiple_choice_targets', []))
+
+    def get_correct_answers(self, example):
+        """Return list of all correct answers for this example.
+        Uses multiple_choice_targets/scores when available, falls back to targets.
+        When mc_letter_format=True, returns letter labels (A/B/C/D) instead of full text."""
+        mc_targets = example.get('multiple_choice_targets', [])
+        mc_scores = example.get('multiple_choice_scores', [])
+        if mc_targets and mc_scores:
+            if self.mc_letter_format:
+                correct = [
+                    MC_LETTERS[i]
+                    for i, (t, s) in enumerate(zip(mc_targets, mc_scores))
+                    if s > 0 and i < len(MC_LETTERS)
+                ]
+            else:
+                correct = [t for t, s in zip(mc_targets, mc_scores) if s > 0]
+            if correct:
+                return correct
+        return example['targets']
 
     def get_question(self, example, target: bool = False):
+        # TODO: Change formatting to remove the Question\n and Answer\n from the prompt
+
         prompt = example['inputs']
-        answer = example['targets']
+        prompt = prompt.replace("Question:", "").replace("Q:", "").replace("Answer:", "").replace("A:", "")
+        # Pre-Process by removing any references to Question:; Q:; Answer:; A:; from the prompt
+        prompt = prompt.split("choice:")[0] # Remove the choices from the prompt
+
         choices = example['multiple_choice_targets']
 
-        formatted_prompt = f"Question:\n{prompt}\n"
-        # Encode the formatted prompt using the tokenizer
-        """encoded = self.tokenizer(
-            formatted_prompt,
-            add_special_tokens=False,
-            truncation=False
-        )["input_ids"]"""
-        encoded = self.tokenizer.encode_ordinary(formatted_prompt)
+        if len(choices) > 0 and self.mc_letter_format:
+            prompt = f"{prompt}\n"
+            for i, choice in enumerate(choices):
+                if i < len(MC_LETTERS):
+                    prompt = f"{prompt}\n{MC_LETTERS[i]}. {choice}"
+        elif len(choices) > 0:
+            prompt = f"{prompt}\n"
+            for choice in choices:
+                prompt = f"{prompt}\nchoice: {choice}"
+
+        prompt = f"Question:\n{prompt}\n\nAnswer:\n"
+        encoded = self.tokenizer.encode_ordinary(prompt)
         return torch.tensor(encoded, dtype=torch.long) if not target else torch.full((len(encoded), ), -100)
 
-    def get_answer(self, example, eval: bool = False):
-        answer = example['targets'][0]
-        choices = example['multiple_choice_targets']
-        multiple_choice_scores = example['multiple_choice_scores']
+    def get_answer(self, example, eval: bool = False, target: bool = False):
+        # get_correct_answers returns letters when mc_letter_format=True, full text otherwise
+        correct_answers = self.get_correct_answers(example)
+        answer = correct_answers[self.rng.integers(0, len(correct_answers))]
 
-        formatted_answer = f"Answer:\n{answer}\n" if not(eval) else "Answer:\n"
-        
-        # Encode the formatted answer using the tokenizer
-        """encoded = self.tokenizer(
-            formatted_answer,
-            add_special_tokens=False,
-            truncation=False
-        )["input_ids"]"""
+        formatted_answer = f"{answer}\n\n" if not(eval) else ""
         encoded = self.tokenizer.encode_ordinary(formatted_answer)
 
-        return torch.tensor(encoded, dtype=torch.long)
+        return torch.tensor(encoded, dtype=torch.long) if not target else torch.full((len(encoded), ), -100)
 
     def get_example(self, example, eval: bool = False, target: bool = False):
         question = self.get_question(example, target=target)
-        
+
         if eval:
             return question
         else:
-            answer = self.get_answer(example)
-            return torch.cat([question, answer, torch.tensor([self.eos], dtype=torch.long)], dim=0)
+            answer = self.get_answer(example, target=target)
+            return torch.cat([question, answer], dim=0)
 
     def __len__(self):
         return sum(len(self.dataset[subset]) for subset in self.subsets)
+
+    def get_category(self, idx):
+        subset, example = self.enumerated_examples[idx]
+        return subset
+
+    def _encode_fixed_prompts(self, subset):
+        """Encode fixed few-shot prompts for a given task subset.
+
+        Prompts are stored in HuggingFace BigBench format (with inputs,
+        targets, multiple_choice_targets, multiple_choice_scores fields)
+        and are processed using get_example, the same as regular dataset
+        examples.
+        """
+        prompts = self.few_shot_prompts.get(subset, [])
+        encoded = []
+        for prompt_example in prompts:
+            tokens = self.get_example(prompt_example, eval=False, target=False)
+            encoded.append(tokens)
+        return encoded
 
     def __getitem__(self, idx):
         # sample questions and answers
         subset, example = self.enumerated_examples[idx]
         example_idx = example['idx']
 
-        # sample additional examples
-        num_shot = self.rng.integers(low=self.shot[0], high=self.shot[1] + 1)
-        
-        while True:
-            idxs = self.rng.choice(len(self.dataset[subset]), size=num_shot, replace=False)
-            examples = [self.dataset[subset][int(i)] for i in idxs]
-            if all([c['idx'] != example_idx for c in examples]):
-                break
-        
-        # encode additional examples
-        seq = [self.get_example(c, target=False) for c in examples]
-        tar = [self.get_example(c, target=True) for c in examples]
-        seq.append(self.get_question(example, target=False))
-        tar.append(self.get_question(example, target=True))
+        # Use fixed few-shot prompts if available for this task
+        # When enabled, ALL prompts from the file are always used (no random sampling)
+        if self.few_shot_prompts is not None and subset in self.few_shot_prompts:
+            fixed_prompts = self._encode_fixed_prompts(subset)
+            seq = fixed_prompts.copy()
+            tar = [torch.full((len(p),), -100) for p in fixed_prompts]
+            seq.append(self.get_question(example, target=False))
+            tar.append(self.get_question(example, target=True))
+        else:
+            # sample additional examples from dataset
+            num_shot = self.rng.integers(low=self.shot[0], high=self.shot[1] + 1)
+
+            while True:
+                idxs = self.rng.choice(len(self.dataset[subset]), size=num_shot, replace=False)
+                examples = [self.dataset[subset][int(i)] for i in idxs]
+                if all([c['idx'] != example_idx for c in examples]):
+                    break
+
+            # encode additional examples
+            seq = [self.get_example(c, target=False) for c in examples]
+            tar = [self.get_example(c, target=True) for c in examples]
+            seq.append(self.get_question(example, target=False))
+            tar.append(self.get_question(example, target=True))
 
         seq.append(self.get_answer(example, eval=self.eval))
-        tar.append(self.get_answer(example, eval=self.eval))
+        # final answer is unmasked (target=False) even when few-shot answers are masked
+        tar.append(self.get_answer(example, eval=self.eval, target=False))
+
+        # append EOT after the final answer when not in eval mode
+        if not self.eval:
+            eot = torch.tensor([self.eos], dtype=torch.long)
+            seq.append(eot)
+            tar.append(eot)
 
         if self.eval:
             seq = torch.cat(seq, dim=0)
             tar = self.get_answer(example)
-            return seq, tar
+            num_choices = self.get_num_choices(example)
+            correct_answers = self.get_correct_answers(example)
+            return seq, tar, num_choices, correct_answers
 
         seq = torch.cat(seq, dim=0)
         tar = torch.cat(tar, dim=0)
-
-        # Shift target by 1 to align with autoregressive prediction
-        if seq.shape[0] > self.max_seq_len:
-            seq = seq[:self.max_seq_len]
-            tar = tar[1:self.max_seq_len+1]
+        if seq.shape[0] > self.seq_len:
+            seq = seq[:self.seq_len]
+            tar = tar[1:self.seq_len+1]
         else:
             tar = tar[1:]
-            # Use inherited padding logic
-            seq, tar = self._pad_or_truncate(seq, tar)
+            zero_padding = torch.full((self.seq_len - seq.shape[0],), 0, dtype=seq.dtype)
+            seq = torch.cat([seq, zero_padding], dim=0)
+            padding = torch.full((self.seq_len - tar.shape[0],), -100, dtype=tar.dtype)
+            tar = torch.cat([tar, padding], dim=0)
 
         return seq, tar
 
-def get_bigbench_dataset(split: str = 'train', subsets: List[str] = BIGBENCH_LITE_ENGLISH, max_samples: int = 1024):
+def get_bigbench_dataset(
+    split: str = 'train',
+    subsets: List[str] = BIGBENCH_LITE_ENGLISH,
+    min_samples: int = 100,
+    max_samples: int = 300,
+    seed: int = 42
+):
     # tasksource/bigbench
     dataset = DatasetDict()
     max_samples = max_samples if max_samples is not None else int(1e11)
     for subset in subsets:
-        dataset[subset] = load_dataset("tasksource/bigbench", subset, split=split, streaming=False, num_proc=16, trust_remote_code=True)
+        # Check that training set has enough samples
+        subset_dataset = load_dataset("tasksource/bigbench", subset, split="train", streaming=False, num_proc=16, trust_remote_code=True)
+        if (len(subset_dataset) < min_samples):
+            log.info(f"Skipping {subset} because it has less than {min_samples} samples")
+            continue
+
+        # Load the dataset for appropriate split
+        subset_dataset = load_dataset("tasksource/bigbench", subset, split=split, streaming=False, num_proc=16, trust_remote_code=True)
+        dataset[subset] = subset_dataset.shuffle(seed=seed)
         if len(dataset[subset]) > max_samples:
             dataset[subset] = dataset[subset].select(range(max_samples))
     return dataset

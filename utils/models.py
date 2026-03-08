@@ -73,7 +73,7 @@ def create_llama_model(vocab_size: int, seq_length: int, n_layer: int, n_head: i
     return model
 
 class CustomLlamaModel(nn.Module):
-    def __init__(self, config, attn='sdpa'):
+    def __init__(self, config, attn='sdpa', weight_tying=False):
         super().__init__()
         self.config = LlamaConfig(vocab_size=config.vocab_size,
                                   hidden_size=config.hidden_size,
@@ -103,6 +103,9 @@ class CustomLlamaModel(nn.Module):
         self.layers = _llama.layers
         self.norm = _llama.norm
         self.output_proj = nn.Linear(self.n_embd, self.output_vocab)
+
+        if weight_tying:
+            self.wte.weight = self.output_proj.weight # weight-tying
 
     def forward(self, input_ids, 
                 attention_mask=None, 
@@ -429,7 +432,7 @@ class DownstreamLlamaLM(BaseDownstreamLlamaModel):
                  output_vocab=None,
                  frozen_modules=None,
                  reinit_modules=None,
-                 weight_tying=True):
+                 weight_tying=False):
         
         super().__init__(model, frozen_modules=frozen_modules, reinit_modules=reinit_modules)
 
@@ -446,6 +449,9 @@ class DownstreamLlamaLM(BaseDownstreamLlamaModel):
             print(f'Using model input and output projections (init)')
             self.input_proj = model.wte
             self.output_proj = model.output_proj
+
+        if self.weight_tying:
+            self.input_proj.weight = self.output_proj.weight # weight-tying
     
         # Apply freezing/unfreezing based on frozen_modules
         self._freeze_unfreeze_modules()

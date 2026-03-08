@@ -52,7 +52,9 @@ from utils.dataset_utils import (
     compute_k_dyck_metrics,
     compute_k_shuffle_dyck_metrics,
     get_c4_dataset,
-    C4Dataset
+    C4Dataset,
+    load_gsm8k_dataset, 
+    GSM8KTrainDataset
 )
 
 from utils.util import (
@@ -65,13 +67,6 @@ from utils.util import (
     save_checkpoint,
     wandb_log,
     setup_logger
-)
-
-from utils.math_util import (
-    load_gsm8k_dataset, 
-    GSM8KTrainDataset,
-    load_metamathqa_dataset,
-    MetaMathQADataset
 )
 
 log = setup_logger('language_ft_train')
@@ -230,42 +225,9 @@ def build_dataloader(
             hf_tokenizer=hf_tokenizer
         )
     
-    elif training_args.task == 'metamathqa':
-        train_dataset = load_metamathqa_dataset(split="train")
-        val_dataset = load_gsm8k_dataset(name="main", split="test")
-        log.info(f'Validating on {len(val_dataset)} samples')
-
-        if(training_args.tokenizer_type == "owt"):
-            tokenizer = tiktoken.get_encoding("gpt2")
-            hf_tokenizer = False
-        elif(training_args.tokenizer_type == "math"):
-            tokenizer = AutoTokenizer.from_pretrained("openai-community/gpt2")
-            hf_tokenizer = True
-        else:
-            raise ValueError(f"Tokenizer type {training_args.tokenizer_type} not supported")
-
-        train_dataset = MetaMathQADataset(
-            tokenizer=tokenizer,
-            dataset=train_dataset,
-            seq_len=training_args.seq_len,
-            seed=training_args.seed,
-            hf_tokenizer=hf_tokenizer,
-            num_icl_examples=3,
-            prompt_only=False
-        )
-        
-        val_dataset = GSM8KTrainDataset(
-            tokenizer=tokenizer,
-            dataset=val_dataset,
-            seq_len=training_args.seq_len,
-            seed=training_args.seed,
-            hf_tokenizer=hf_tokenizer,
-            num_icl_examples=3
-        )
-    
     elif training_args.task == 'bigbench-lite':
-        train_dataset = get_bigbench_dataset(split='train')
-        val_dataset = get_bigbench_dataset(split='validation')
+        train_dataset = get_bigbench_dataset(split='train', min_samples=training_args.min_samples, max_samples=training_args.max_samples)
+        val_dataset = get_bigbench_dataset(split='validation', min_samples=training_args.min_samples, max_samples=training_args.max_samples)
 
         if(training_args.tokenizer_type == "owt" or training_args.tokenizer_type == "math"):
             tokenizer = tiktoken.get_encoding("gpt2")
@@ -274,7 +236,7 @@ def build_dataloader(
             dataset=train_dataset,
             seq_len=training_args.seq_len,
             seed=training_args.seed,
-            shot=[0, 5],
+            shot=training_args.n_shot,
             eval=False
         )
 
@@ -282,7 +244,7 @@ def build_dataloader(
             dataset=val_dataset,
             seq_len=training_args.seq_len,
             seed=training_args.seed,
-            shot=[0, 5],
+            shot=training_args.n_shot,
             eval=False
         )
 

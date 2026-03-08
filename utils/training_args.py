@@ -80,7 +80,7 @@ class ModelTrainingArgs(BaseTrainingArgs):
     freeze_modules: List[str] = field(default_factory=list)
     reinit_modules: List[str] = field(default_factory=list)
     reinit_layer_idxs: List[int] = field(default_factory=lambda: [0, 0])
-    weight_tying: int = 1
+    weight_tying: int = 0
 
     # Training hyperparameters
     batch_size: int = 16
@@ -164,7 +164,7 @@ class TrainingArgs:
     freeze_modules: List[str] = field(default_factory=list)
     reinit_modules: List[str] = field(default_factory=list)
     reinit_layer_idxs: List[int] = field(default_factory=lambda: [0, 0])
-    weight_tying: int = 1
+    weight_tying: int = 0
 
     # HYPERPARAMETERS (GENERAL)
     batch_size: int = 16
@@ -317,7 +317,7 @@ def create_parser(for_v2l: bool = False) -> argparse.ArgumentParser:
                        help='list of modules to reinitialize: pos, attn, mlp, ln, core')
     parser.add_argument('--reinit_layer_idxs', type=int, nargs=2, default=[0, 0],
                        help='layer indices to reinitialize (start end) -- e.g., --reinit_layer_idxs 0 4')
-    parser.add_argument('--weight_tying', type=int, default=1, help='enable weight tying for input and output projections')
+    parser.add_argument('--weight_tying', type=int, default=0, help='enable weight tying for input and output projections')
 
     # Training hyperparameters
     parser.add_argument('--batch_size', type=int, default=16, help='batch size for training')  # Aligned to launcher defaults
@@ -572,7 +572,7 @@ def create_nca_parser() -> argparse.ArgumentParser:
     parser.add_argument('--freeze_modules', type=str, nargs='*', default=[], choices=['', 'pos', 'core', 'core-attn', 'core-mlp', 'core-ln', 'core-attn-ln', 'embs', 'ln'], help='list of modules to freeze: pos, core, core-attn (this means core minus attention), core-mlp (this means core minus mlp), core-ln (this means core minus layer norm), core-attn-ln (this means core minus attention and layer norm), embs, ln')
     parser.add_argument('--reinit_modules', type=str, nargs='*', default=['embed'], choices=['', 'embed', 'pos', 'attn', 'mlp', 'ln', 'core'], help='list of modules to reinitialize: embed, pos, attn, mlp, ln, core')
     parser.add_argument('--reinit_layer_idxs', type=int, nargs=2, default=[0, 0], help='layer indices to reinitialize (start end) -- e.g., --reinit_layer_idxs 0 4')
-    parser.add_argument('--weight_tying', type=int, default=1, help='enable weight tying')
+    parser.add_argument('--weight_tying', type=int, default=0, help='enable weight tying')
 
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--val_freq', type=int, default=500)
@@ -719,7 +719,7 @@ def create_base_ft_parser() -> argparse.ArgumentParser:
     parser.add_argument('--freeze_modules', type=str, nargs='*', default=[], choices=['', 'pos', 'core', 'core-attn', 'core-mlp', 'core-ln', 'core-attn-ln', 'embs', 'ln'], help='list of modules to freeze: pos, core, core-attn (this means core minus attention), core-mlp (this means core minus mlp), core-ln (this means core minus layer norm), core-attn-ln (this means core minus attention and layer norm), embs, ln')
     parser.add_argument('--reinit_modules', type=str, nargs='*', default=['embed'], help='list of modules to reinitialize: embed, pos, attn, mlp, ln, core')
     parser.add_argument('--reinit_layer_idxs', type=int, nargs=2, default=[0, 0], help='layer indices to reinitialize (start end) -- e.g., --reinit_layer_idxs 0 4')
-    parser.add_argument('--weight_tying', type=int, default=1, help='enable weight tying')
+    parser.add_argument('--weight_tying', type=int, default=0, help='enable weight tying')
 
     parser.add_argument('--save_path', type=str, default='')
     parser.add_argument('--load_path', type=str, default=None)
@@ -763,6 +763,11 @@ class LanguageTrainingArgs(BaseFTArgs):
     intervals: List[int] = field(default_factory=lambda: [2500, 5000, 10000, 20000, 30000, 40000, 50000])
     save_freq: int = 500
 
+    # bigbench-lite parameters
+    n_shot: List[int] = field(default_factory=lambda: [0, 5])
+    max_samples: int = 200
+    min_samples: int = 100
+
     def __post_init__(self):
         # Call parent __post_init__
         super().__post_init__()
@@ -800,6 +805,11 @@ def create_language_ft_parser() -> argparse.ArgumentParser:
     parser.add_argument('--max_depth', type=int, default=16)
     parser.add_argument('--p_open', type=float, default=0.5)
     parser.add_argument('--vocab_size', type=int, default=None)
+
+    # instruction ft parameters
+    parser.add_argument('--n_shot', nargs=2, type=int, default=[0, 5])
+    parser.add_argument('--min_samples', type=int, default=100)
+    parser.add_argument('--max_samples', type=int, default=200)
     return parser
 
 def language_ft_args_to_dataclass(args: LanguageTrainingArgs):
@@ -963,6 +973,9 @@ class BigBenchEvalArgs(BaseFTArgs):
     n_shot: List[int] = field(default_factory=lambda: [0, 0])
     eval_passes: List[int] = field(default_factory=lambda: [1, 2, 4, 8, 16, 32])
     max_per_task: int = 30
+    eval_mode: str = 'generative'
+    few_shot_prompts_path: Optional[str] = None
+    min_samples: int = 100
 
 def create_bigbench_eval_parser() -> argparse.ArgumentParser:
     parser = create_base_ft_parser()
@@ -979,6 +992,9 @@ def create_bigbench_eval_parser() -> argparse.ArgumentParser:
     parser.add_argument('--start_idx', type=int, default=0)
     parser.add_argument('--end_idx', type=int, default=None)
     parser.add_argument('--max_per_task', type=int, default=30)
+    parser.add_argument('--eval_mode', type=str, default='generative', choices=['generative', 'logprob'])
+    parser.add_argument('--few_shot_prompts_path', type=str, default=None)
+    parser.add_argument('--min_samples', type=int, default=100)
     return parser
 
 def bigbench_eval_args_to_dataclass(args: BigBenchEvalArgs):

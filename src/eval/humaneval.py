@@ -186,9 +186,9 @@ def build_model(args: HumanEvalArgs):
     pretrain_model = create_llama_model(
         vocab_size=args.vocab_size,
         seq_length=args.seq_len,
-        n_layer=args.n_layers,
-        n_head=args.n_heads,
-        n_embd=args.n_embed,
+        n_layer=args.n_layer,
+        n_head=args.n_head,
+        n_embd=args.n_embd,
     )
 
     model = DownstreamLlamaLM(
@@ -211,10 +211,10 @@ def init_args(args: HumanEvalArgs):
     args.start_idx = 0 if args.start_idx is None else args.start_idx
     args.end_idx = len(args.problems) if args.end_idx is None else args.end_idx
 
-    log.info("Saving solutions to %s", args.save_path)
+    log.info("Saving solutions to %s", args.save_dir)
 
-    args.solution_path = os.path.join(args.save_path, f"solutions_{args.start_idx}_{args.end_idx}.jsonl")
-    os.makedirs(os.path.dirname(args.save_path), exist_ok=True)
+    args.solution_path = os.path.join(args.save_dir, f"solutions_{args.start_idx}_{args.end_idx}.jsonl")
+    os.makedirs(os.path.dirname(args.save_dir), exist_ok=True)
 
     # set up path to save solutions
     return args
@@ -285,9 +285,9 @@ def main(args):
     pass_at_k = {k: pass_at_k[k].item() for k in pass_at_k.keys()}
     log.info(f"Pass@k: {pass_at_k}")
 
-    with open(os.path.join(args.save_path, "pass_at_k.json"), "w") as f:
+    with open(os.path.join(args.save_dir, "pass_at_k.json"), "w") as f:
         json.dump(pass_at_k, f)
-    log.info(f"Pass@k saved to {os.path.join(args.save_path, 'pass_at_k.json')}")
+    log.info(f"Pass@k saved to {os.path.join(args.save_dir, 'pass_at_k.json')}")
 
 if __name__ == "__main__":
     parser = create_human_eval_parser()

@@ -4,8 +4,8 @@ SAVE_DIR=DIRECTORY_TO_SAVE_MODELS
 
 python src/nca_ppt.py \
     --wandb_enable \
-    --wandb_name NCA-PT-TEST \
-    --wandb_project NCA-PT \
+    --wandb_name RUN_NAME \
+    --wandb_project PROJECT_NAME \
     --seed 0 \
     --grid 12 \
     --patch 2 \

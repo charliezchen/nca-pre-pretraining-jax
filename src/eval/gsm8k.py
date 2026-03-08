@@ -1,49 +1,18 @@
 import os
-from re import I
 import sys
-import argparse
 import json
-import wandb
-import random
-from dataclasses import dataclass
+import math
 
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader
-from torch.nn import CrossEntropyLoss, BCEWithLogitsLoss
 import torch.nn.functional as F
 
-import jax
-import jax.numpy as jnp
-import jax.lax as lax
-from jax.random import split
-
-import datasets
-from datasets import load_dataset
 from transformers import AutoTokenizer
-
-import math
-
-import numpy as np
-import itertools
-
-import time
-
-import math
 from math_verify import parse, verify
-
-import numpy as np
-import itertools
-
-import glob
-from PIL import Image
-
-from torchvision import transforms
 
 import tiktoken
 
 sys.path.append(".")
-sys.path.append("..")
 
 from utils.training_args import (
     MathEvalArgs,
@@ -175,9 +144,9 @@ def main(args: MathEvalArgs):
     pretrain_model = create_llama_model(
         vocab_size=args.vocab_size,
         seq_length=args.seq_len,
-        n_layer=args.n_layers,
-        n_head=args.n_heads,
-        n_embd=args.n_embed,
+        n_layer=args.n_layer,
+        n_head=args.n_head,
+        n_embd=args.n_embd,
     )
 
     model = DownstreamLlamaLM(
@@ -221,12 +190,12 @@ def main(args: MathEvalArgs):
     dataset = GSM8KDataset(tokenizer, test_ds, hf_tokenizer=hf_tokenizer, num_icl_examples=3)
 
     # json results
-    if not os.path.exists(args.save_path):
-        os.makedirs(args.save_path, exist_ok=True)
+    if not os.path.exists(args.save_dir):
+        os.makedirs(args.save_dir, exist_ok=True)
 
     start_idx = 0 if args.start_idx is None else args.start_idx
     end_idx = min(args.end_idx, len(dataset)) if args.end_idx is not None else len(dataset)
-    json_file = os.path.join(args.save_path, f"results_{start_idx}_{end_idx}.jsonl")
+    json_file = os.path.join(args.save_dir, f"results_{start_idx}_{end_idx}.jsonl")
     json_results = [{}]
     correct = 0
     total = 0
