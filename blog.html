@@ -562,10 +562,12 @@ html.theme-transition *::after {
 
 .vbar.scratch { background: var(--bar-scratch-bg); }
 .vbar.c4 { background: var(--accent2); }
+.vbar.dyck { background: var(--accent3); }
 .vbar.nca { background: var(--accent); }
 
 [data-theme="light"] .vbar.nca { background: #4a9e12; }
 [data-theme="light"] .vbar.c4 { background: #0a8a9e; }
+[data-theme="light"] .vbar.dyck { background: #b87020; }
 
 .vbar-method-labels {
   display: flex;
@@ -1163,6 +1165,10 @@ footer a {
             <div class="vbar c4" data-height="190"></div>
           </div>
           <div class="vbar-col">
+            <span class="vbar-value">14.35</span>
+            <div class="vbar dyck" data-height="181"></div>
+          </div>
+          <div class="vbar-col">
             <span class="vbar-value">13.82</span>
             <div class="vbar nca" data-height="166"></div>
           </div>
@@ -1170,6 +1176,7 @@ footer a {
         <div class="vbar-method-labels">
           <span class="vbar-method-label">Scr</span>
           <span class="vbar-method-label">C4</span>
+          <span class="vbar-method-label">Dyck</span>
           <span class="vbar-method-label">NCA</span>
         </div>
       </div>
@@ -1186,6 +1193,10 @@ footer a {
             <div class="vbar c4" data-height="190"></div>
           </div>
           <div class="vbar-col">
+            <span class="vbar-value">7.91</span>
+            <div class="vbar dyck" data-height="179"></div>
+          </div>
+          <div class="vbar-col">
             <span class="vbar-value">7.70</span>
             <div class="vbar nca" data-height="168"></div>
           </div>
@@ -1193,6 +1204,7 @@ footer a {
         <div class="vbar-method-labels">
           <span class="vbar-method-label">Scr</span>
           <span class="vbar-method-label">C4</span>
+          <span class="vbar-method-label">Dyck</span>
           <span class="vbar-method-label">NCA</span>
         </div>
       </div>
@@ -1209,6 +1221,10 @@ footer a {
             <div class="vbar c4" data-height="182"></div>
           </div>
           <div class="vbar-col">
+            <span class="vbar-value">1.85</span>
+            <div class="vbar dyck" data-height="176"></div>
+          </div>
+          <div class="vbar-col">
             <span class="vbar-value">1.84</span>
             <div class="vbar nca" data-height="174"></div>
           </div>
@@ -1216,6 +1232,7 @@ footer a {
         <div class="vbar-method-labels">
           <span class="vbar-method-label">Scr</span>
           <span class="vbar-method-label">C4</span>
+          <span class="vbar-method-label">Dyck</span>
           <span class="vbar-method-label">NCA</span>
         </div>
       </div>
@@ -1223,6 +1240,7 @@ footer a {
     <div class="chart-legend">
       <span><span class="dot" style="background:var(--bar-scratch-bg)"></span>Scratch</span>
       <span><span class="dot" style="background:var(--accent2)"></span>C4 (natural language)</span>
+      <span><span class="dot" style="background:var(--accent3)"></span>Dyck (synthetic)</span>
       <span><span class="dot" style="background:var(--accent)"></span>NCA (synthetic)</span>
     </div>
   </div>
@@ -1246,8 +1264,8 @@ footer a {
     <div class="chart-legend">
       <span><span class="dot" style="background:var(--bar-scratch-bg)"></span>Scratch</span>
       <span><span class="dot" style="background:var(--accent2)"></span>C4</span>
-      <span><span class="dot" style="background:var(--accent)"></span>NCA</span>
       <span><span class="dot" style="background:var(--accent3)"></span>Dyck</span>
+      <span><span class="dot" style="background:var(--accent)"></span>NCA</span>
     </div>
   </div>
 
@@ -1293,13 +1311,14 @@ footer a {
   <p>Surprisingly, we observe that our non-linguistic NCA data outperforms natural language at equal scale. So, we investigate further: what happens if we give C4 <strong>~10× more data</strong>? We scale C4 pre-pre-training to 1.6B tokens while keeping NCA at 164M. Even with this data advantage, NCA still <strong></strong>converges 1.4x faster and achieves 5% better final perplexity </strong>.</p>
 
   <div class="chart-wrapper" id="scale-chart">
-    <h4>OpenWebText: NCA (160M tokens) vs C4 (1.6B tokens)</h4>
+    <h4>OpenWebText: NCA (164M tokens) vs C4 (1.6B tokens)</h4>
     <div class="conv-panel" style="max-width:640px;margin:0 auto">
       <svg class="conv-svg" id="conv-scale" viewBox="0 0 560 300"></svg>
     </div>
     <div class="chart-legend">
       <span><span class="dot" style="background:var(--bar-scratch-bg)"></span>Scratch</span>
-      <span><span class="dot" style="background:var(--accent)"></span>NCA (160M)</span>
+      <span><span class="dot" style="background:var(--accent)"></span>NCA (164M)</span>
+      <span><span class="dot" style="background:var(--accent3)"></span>Dyck (164M)</span>
       <span><span class="dot" style="background:var(--accent2)"></span>C4 (1.6B)</span>
       <span><span class="dot" style="background:var(--accent3)"></span>C4 (1.6B, no reinit)</span>
     </div>
@@ -2101,7 +2120,7 @@ function renderScaleChart(svgId, d) {
   const M = {t:10, r:58, b:30, l:50};
   const W = 560, H = 300;
   const pW = W-M.l-M.r, pH = H-M.t-M.b;
-  const methods = ['scratch','nca','c4lg','c4nr'];
+  const methods = ['scratch','nca','dyck','c4lg','c4nr'];
 
   let xAll=[], yAll=[];
   methods.forEach(k => {
@@ -2328,8 +2347,8 @@ function renderScaleChart(svgId, d) {
 
   convPanels[svgId] = { svg, snapPoints, crosshair, dots, tooltip, M, W, H,
     methods: methods,
-    names: {scratch:'Scratch', nca:'NCA (160M)', c4lg:'C4 (1.6B)', c4nr:'C4 (1.6B, no reinit)'},
-    colors: {scratch:'var(--text-muted)', nca:'var(--accent)', c4lg:'var(--accent2)', c4nr:'var(--accent3)'}
+    names: {scratch:'Scratch', nca:'NCA (160M)', dyck:'Dyck (164M)', c4lg:'C4 (1.6B)', c4nr:'C4 (1.6B, no reinit)'},
+    colors: {scratch:'var(--text-muted)', nca:'var(--accent)', dyck:'var(--accent3)', c4lg:'var(--accent2)', c4nr:'var(--accent3)'}
   };
 
   overlay.addEventListener('mousemove', e => convHover(svgId, e));
