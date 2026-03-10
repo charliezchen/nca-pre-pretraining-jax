@@ -160,13 +160,10 @@ Common evaluation arguments:
 ## Citation
 
 ```bibtex
-@misc{leehan2026traininglmnca,
-    title   = {Training Language Models via Neural Cellular Automata},
-    author  = {Dan Lee and Seungwook Han and Akarsh Kumar and Pulkit Agrawal},
-    year    = {2026},
-    eprint  = {},
-    archivePrefix = {arXiv},
-    primaryClass = {cs.LG},
-    url     = {},
+@inproceedings{placeholder2026nca,
+  title={Training Language Models via Neural Cellular Automata},
+  author={Seungwook Han and Dan Lee and Akarsh Kumar and Pulkit Agrawal},
+  booktitle={TBD,
+  year={2026}
 }
 ```
