@@ -464,7 +464,7 @@ html.theme-transition *::after {
   font-family: var(--mono);
   font-size: 10px;
   color: var(--text-muted);
-  width: 28px;
+  width: 52px;
   text-align: right;
   flex-shrink: 0;
 }
@@ -634,6 +634,7 @@ html.theme-transition *::after {
 .conv-line-scratch { stroke: var(--text-muted); opacity: 0.6; }
 .conv-line-c4 { stroke: var(--accent2); }
 .conv-line-nca { stroke: var(--accent); }
+.conv-line-dyck { stroke: var(--accent3); }
 .conv-line-c4lg { stroke: var(--accent2); }
 .conv-line-c4nr { stroke: var(--accent3); opacity: 0.7; }
 
@@ -659,6 +660,7 @@ html.theme-transition *::after {
 .conv-snap-dot-scratch { stroke: var(--text-muted); fill: var(--bg); }
 .conv-snap-dot-c4 { stroke: var(--accent2); fill: var(--bg); }
 .conv-snap-dot-nca { stroke: var(--accent); fill: var(--bg); }
+.conv-snap-dot-dyck { stroke: var(--accent3); fill: var(--bg); }
 .conv-snap-dot-c4lg { stroke: var(--accent2); fill: var(--bg); }
 .conv-snap-dot-c4nr { stroke: var(--accent3); fill: var(--bg); }
 
@@ -1054,7 +1056,7 @@ footer a {
       </svg>
       <span>Paper</span>
     </a>
-    <a href="#" class="hero-link" target="_blank" rel="noopener">
+    <a href="https://github.com/danihyunlee/nca-pre-pretraining" class="hero-link" target="_blank" rel="noopener">
       <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
         <path d="M6 10.5L3.5 8 6 5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M10 5.5L12.5 8 10 10.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1143,7 +1145,7 @@ footer a {
 <section id="results">
   <div class="section-label">03 — Results</div>
   <h2>The surprising payoff</h2>
-  <p>Under matched token budgets (164M tokens each), NCA pre-pre-training consistently <strong>outperforms both from-scratch training and pre-pre-training on natural language (C4)</strong> across web text, math, and code. The gains aren't just better convergence speed, but also better final perplexity.</p>
+  <p>Under matched token budgets (164M tokens each), NCA pre-pre-training consistently <strong>outperforms from-scratch training, pre-pre-training on natural language (C4), and pre-pre-training on other synthetic data (Dyck) </strong> across web text, math, and code. The gains aren't just better convergence speed, but also better final perplexity.</p>
 
   <div class="chart-wrapper" id="ppl-chart">
     <h4>Final Perplexity by Domain (↓ lower is better)</h4>
@@ -1245,6 +1247,7 @@ footer a {
       <span><span class="dot" style="background:var(--bar-scratch-bg)"></span>Scratch</span>
       <span><span class="dot" style="background:var(--accent2)"></span>C4</span>
       <span><span class="dot" style="background:var(--accent)"></span>NCA</span>
+      <span><span class="dot" style="background:var(--accent3)"></span>Dyck</span>
     </div>
   </div>
 
@@ -1255,7 +1258,7 @@ footer a {
     <div class="bar-group">
       <div class="bar-label"><span>GSM8K (Math) (pass@1 accuracy)</span></div>
       <div class="bar-rows">
-        <div class="bar-row"><span class="bar-row-label">Scr</span><div class="bar-track"><div class="bar-fill scratch" data-width="87.6%" style="justify-content:flex-end;padding-right:10px"><span>3.82%</span></div></div></div>
+        <div class="bar-row"><span class="bar-row-label">Scratch</span><div class="bar-track"><div class="bar-fill scratch" data-width="87.6%" style="justify-content:flex-end;padding-right:10px"><span>3.82%</span></div></div></div>
         <div class="bar-row"><span class="bar-row-label">C4</span><div class="bar-track"><div class="bar-fill c4" data-width="87.4%" style="justify-content:flex-end;padding-right:10px">3.81%</div></div></div>
         <div class="bar-row"><span class="bar-row-label">Dyck</span><div class="bar-track"><div class="bar-fill dyck" data-width="94.0%" style="justify-content:flex-end;padding-right:10px">4.10%</div></div></div>
         <div class="bar-row"><span class="bar-row-label">NCA</span><div class="bar-track"><div class="bar-fill nca" data-width="100%" style="justify-content:flex-end;padding-right:10px">4.36%</div></div></div>
@@ -1264,7 +1267,7 @@ footer a {
     <div class="bar-group">
       <div class="bar-label"><span>HumanEval (Code) (pass@1 accuracy)</span></div>
       <div class="bar-rows">
-        <div class="bar-row"><span class="bar-row-label">Scr</span><div class="bar-track"><div class="bar-fill scratch" data-width="90.1%" style="justify-content:flex-end;padding-right:10px"><span>6.75%</span></div></div></div>
+        <div class="bar-row"><span class="bar-row-label">Scratch</span><div class="bar-track"><div class="bar-fill scratch" data-width="90.1%" style="justify-content:flex-end;padding-right:10px"><span>6.75%</span></div></div></div>
         <div class="bar-row"><span class="bar-row-label">C4</span><div class="bar-track"><div class="bar-fill c4" data-width="83.7%" style="justify-content:flex-end;padding-right:10px">6.27%</div></div></div>
         <div class="bar-row"><span class="bar-row-label">Dyck</span><div class="bar-track"><div class="bar-fill dyck" data-width="92.1%" style="justify-content:flex-end;padding-right:10px">6.90%</div></div></div>
         <div class="bar-row"><span class="bar-row-label">NCA</span><div class="bar-track"><div class="bar-fill nca" data-width="100%" style="justify-content:flex-end;padding-right:10px">7.49%</div></div></div>
@@ -1273,9 +1276,9 @@ footer a {
     <div class="bar-group">
       <div class="bar-label"><span>BigBench-Lite (Reasoning) (normalized accuracy pass@2)</span></div>
       <div class="bar-rows">
-        <div class="bar-row"><span class="bar-row-label">Dyck</span><div class="bar-track"><div class="bar-fill dyck" data-width="68.3%" style="justify-content:flex-end;padding-right:10px">18.10%</div></div></div>
-        <div class="bar-row"><span class="bar-row-label">Scr</span><div class="bar-track"><div class="bar-fill scratch" data-width="78.9%" style="justify-content:flex-end;padding-right:10px"><span>20.91%</span></div></div></div>
+        <div class="bar-row"><span class="bar-row-label">Scratch</span><div class="bar-track"><div class="bar-fill scratch" data-width="78.9%" style="justify-content:flex-end;padding-right:10px"><span>20.91%</span></div></div></div>
         <div class="bar-row"><span class="bar-row-label">C4</span><div class="bar-track"><div class="bar-fill c4" data-width="85.9%" style="justify-content:flex-end;padding-right:10px">22.76%</div></div></div>
+        <div class="bar-row"><span class="bar-row-label">Dyck</span><div class="bar-track"><div class="bar-fill dyck" data-width="68.3%" style="justify-content:flex-end;padding-right:10px">18.10%</div></div></div>
         <div class="bar-row"><span class="bar-row-label">NCA</span><div class="bar-track"><div class="bar-fill nca" data-width="100%" style="justify-content:flex-end;padding-right:10px">26.51%</div></div></div>
       </div>
     </div>
@@ -1737,16 +1740,19 @@ const convData = {
   owt: {
     scratch: { iter: [500,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,17200], loss: [4.615,3.822,3.388,3.172,3.054,2.981,2.926,2.882,2.844,2.811,2.782,2.756,2.734,2.716,2.702,2.692,2.687,2.685,2.685] },
     c4: { iter: [500,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,17200], loss: [4.322,3.755,3.377,3.167,3.057,2.985,2.932,2.887,2.848,2.815,2.786,2.760,2.737,2.718,2.704,2.694,2.688,2.687,2.687] },
+    dyck: { iter: [500,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,17200], loss: [4.559087313, 3.764611159, 3.347507755, 3.141557234, 3.031773582, 2.959412126, 2.905142911, 2.860257942, 2.822238708, 2.789851235, 2.760474909, 2.73505429, 2.713104983, 2.696512718, 2.680455806, 2.67118378, 2.66557215, 2.664575712, 2.664141228] },
     nca: { iter: [500,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,17200], loss: [4.514,3.700,3.311,3.114,2.995,2.923,2.867,2.823,2.785,2.752,2.723,2.697,2.675,2.656,2.642,2.633,2.627,2.626,2.626] }
   },
   math: {
     scratch: { iter: [500,1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000,7500,8000], loss: [3.316,2.817,2.625,2.509,2.418,2.351,2.298,2.254,2.217,2.183,2.155,2.130,2.112,2.100,2.094,2.093] },
     c4: { iter: [500,1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000,7500,8000], loss: [3.195,2.813,2.619,2.499,2.417,2.354,2.304,2.261,2.222,2.188,2.159,2.134,2.116,2.103,2.098,2.097] },
+    dyck: { iter: [500,1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000,7500,8000], loss: [3.251119158, 2.776012956, 2.585123311, 2.468431876, 2.385050977, 2.322948472, 2.274501702, 2.231490421, 2.192543239, 2.159855326, 2.130281394, 2.10604501, 2.087474302, 2.075332472, 2.069596676, 2.068482774] },
     nca: { iter: [500,1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000,7500,8000], loss: [3.178,2.733,2.557,2.452,2.368,2.300,2.247,2.203,2.165,2.132,2.102,2.078,2.059,2.047,2.042,2.041] }
   },
   code: {
     scratch: { iter: [3000,6000,9000,12000,15000,18000,21000,24000], loss: [0.914,0.817,0.766,0.729,0.702,0.680,0.669,0.653] },
     c4: { iter: [3000,6000,9000,12000,15000,18000,21000,24000], loss: [0.914,0.803,0.748,0.708,0.675,0.653,0.637,0.634] },
+    dyck: { iter: [3000,6000,9000,12000,15000,18000,21000,24000], loss: [0.887881519, 0.782622679, 0.728269217, 0.689145653, 0.657536901, 0.633413128, 0.620146554, 0.615669746] },
     nca: { iter: [3000,6000,9000,12000,15000,18000,21000,24000], loss: [0.876,0.775,0.720,0.681,0.651,0.628,0.614,0.610] }
   }
 };
@@ -1754,6 +1760,7 @@ const convData = {
 const scaleData = {
   scratch: { iter: [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,17200], loss: [3.822,3.388,3.172,3.054,2.981,2.926,2.882,2.844,2.811,2.782,2.756,2.734,2.716,2.702,2.692,2.687,2.685,2.685] },
   nca: { iter: [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,17200], loss: [3.700,3.311,3.114,2.995,2.923,2.867,2.823,2.785,2.752,2.723,2.697,2.675,2.656,2.642,2.633,2.627,2.626,2.626] },
+  dyck: { iter: [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,17200], loss: [3.764611159, 3.347507755, 3.141557234, 3.031773582, 2.959412126, 2.905142911, 2.860257942, 2.822238708, 2.789851235, 2.760474909, 2.73505429, 2.713104983, 2.696512718, 2.680455806, 2.67118378, 2.66557215, 2.664575712, 2.664141228] },
   c4lg: { iter: [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,17200], loss: [3.628,3.288,3.120,3.026,2.961,2.910,2.872,2.836,2.805,2.777,2.752,2.730,2.712,2.698,2.688,2.683,2.682,2.682] },
   c4nr: { iter: [1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,11000,12000,13000,14000,15000,16000,17000,17200], loss: [3.182,3.127,3.041,2.974,2.920,2.878,2.840,2.808,2.779,2.753,2.730,2.709,2.691,2.677,2.668,2.663,2.662,2.662] }
 };
@@ -1797,7 +1804,7 @@ function renderConvPanel(svgId, d, showYLabel) {
   const pW = W-M.l-M.r, pH = H-M.t-M.b;
 
   let xAll=[], yAll=[];
-  ['scratch','c4','nca'].forEach(k => {
+  ['scratch','c4','nca','dyck'].forEach(k => {
     d[k].iter.forEach((it,i) => {
       xAll.push(it * CONV_BS);
       yAll.push(Math.exp(d[k].loss[i]));
@@ -1855,7 +1862,7 @@ function renderConvPanel(svgId, d, showYLabel) {
   }
 
   // Data lines
-  ['scratch','c4','nca'].forEach(method => {
+  ['scratch','c4','nca','dyck'].forEach(method => {
     const md = d[method];
     const pts = md.iter.map((it,i) =>
       sx(it * CONV_BS).toFixed(1) + ',' + sy(Math.exp(md.loss[i])).toFixed(1)
@@ -1954,18 +1961,18 @@ function renderConvPanel(svgId, d, showYLabel) {
 
   // Build snap points (all unique iterations across methods)
   const allIters = new Set();
-  ['scratch','c4','nca'].forEach(k => d[k].iter.forEach(it => allIters.add(it)));
+  ['scratch','c4','nca','dyck'].forEach(k => d[k].iter.forEach(it => allIters.add(it)));
   const sortedIters = [...allIters].sort((a,b) => a-b);
 
   const lookup = {};
-  ['scratch','c4','nca'].forEach(k => {
+  ['scratch','c4','nca','dyck'].forEach(k => {
     lookup[k] = {};
     d[k].iter.forEach((it,i) => { lookup[k][it] = Math.exp(d[k].loss[i]); });
   });
 
   const snapPoints = sortedIters.map(it => {
     const sp = { tokens: it * CONV_BS, x: sx(it * CONV_BS) };
-    ['scratch','c4','nca'].forEach(k => {
+    ['scratch','c4','nca','dyck'].forEach(k => {
       sp[k] = lookup[k][it] !== undefined
         ? { ppl: lookup[k][it], y: sy(lookup[k][it]) }
         : null;
@@ -1979,7 +1986,7 @@ function renderConvPanel(svgId, d, showYLabel) {
 
   // Snap dots
   const dots = {};
-  ['scratch','c4','nca'].forEach(k => {
+  ['scratch','c4','nca','dyck'].forEach(k => {
     dots[k] = mkEl('circle', {cx:0, cy:0, r:4, class:'conv-snap-dot conv-snap-dot-'+k});
     svg.appendChild(dots[k]);
   });
@@ -1996,9 +2003,9 @@ function renderConvPanel(svgId, d, showYLabel) {
 
   // Store state
   convPanels[svgId] = { svg, snapPoints, crosshair, dots, tooltip, M, W, H,
-    methods: ['scratch','c4','nca'],
-    names: {scratch:'Scratch', c4:'C4', nca:'NCA'},
-    colors: {scratch:'var(--text-muted)', c4:'var(--accent2)', nca:'var(--accent)'}
+    methods: ['scratch','c4','nca','dyck'],
+    names: {scratch:'Scratch', c4:'C4', nca:'NCA', dyck:'Dyck'},
+    colors: {scratch:'var(--text-muted)', c4:'var(--accent2)', nca:'var(--accent)', dyck:'var(--accent3)'}
   };
 
   // Attach events
@@ -2042,15 +2049,15 @@ function convHover(svgId, evt) {
     }
   });
 
-  // Build tooltip HTML
+  // Build tooltip HTML — sort by descending perplexity (top to bottom on chart)
   let html = '<div class="conv-tooltip-header">' + fmtTokens(nearest.tokens) + ' tokens</div>';
-  methods.forEach(k => {
-    if (nearest[k]) {
-      html += '<div class="conv-tooltip-row">'
-        + '<div class="conv-tooltip-dot" style="background:' + clrs[k] + '"></div>'
-        + names[k] + ': ' + nearest[k].ppl.toFixed(2)
-        + '</div>';
-    }
+  const sortedMethods = methods.filter(k => nearest[k])
+    .sort((a, b) => nearest[b].ppl - nearest[a].ppl);
+  sortedMethods.forEach(k => {
+    html += '<div class="conv-tooltip-row">'
+      + '<div class="conv-tooltip-dot" style="background:' + clrs[k] + '"></div>'
+      + names[k] + ': ' + nearest[k].ppl.toFixed(2)
+      + '</div>';
   });
   tooltip.innerHTML = html;
   tooltip.classList.add('visible');
