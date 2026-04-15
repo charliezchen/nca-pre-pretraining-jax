@@ -322,14 +322,15 @@ def compute_rule_gzip_batch(
         score = average_diff.mean(axis=tuple(range(1, sims.ndim)))
 
     elif(mode == 'gzip'):
+        import numpy as np
         seq, _ = tokenizer.encode_task(sims)
         grid_len = (H*W)//(tokenizer.patch**2)+2
         seq = seq.reshape(B, -1, grid_len)
         seq = seq[:, :, 1:-1]
-        seq = jnp.array(seq).reshape(B, -1)
+        seq_np = np.asarray(seq).reshape(B, -1).astype(np.int32)
         score = []
         for b in range(B):
-            byte_data = seq[b].tobytes()
+            byte_data = seq_np[b].tobytes()
             score.append(gzip_complexity(byte_data))
         score = jnp.array(score)
     return score

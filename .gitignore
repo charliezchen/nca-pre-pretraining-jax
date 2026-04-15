@@ -3,6 +3,10 @@
 *_output/
 logs
 images
+.venv/
+uv.lock
+checkpoints/
+wandb/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

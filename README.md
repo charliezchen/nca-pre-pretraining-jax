@@ -1,172 +1,113 @@
-## Training Language Models via Neural Cellular Automata
+# Training Language Models via Neural Cellular Automata — JAX/TPU port
 
-This repository provides an implementation of the paper, [Training Language Models via Neural Cellular Automata](https://arxiv.org/abs/2603.10055).
+JAX + Flax rewrite of [Training Language Models via Neural Cellular Automata](https://arxiv.org/abs/2603.10055) (Lee et al.). Runs 100% on TPUs via `jax.sharding` data parallelism — no PyTorch, no conda.
 
-Pre-training large language models on natural language is costly, biased, and entangles knowledge with reasoning. We propose **NCA pre-pre-training**: first training a transformer on dynamics from neural cellular automata (NCA), then continuing with standard language pre-training. With only 164M NCA tokens, this improves downstream language modeling by up to 6% and accelerates convergence by up to 1.6× — outperforming 1.6B tokens of natural language (C4) as a pre-pre-training signal.
+Pre-training language models on natural language is costly, biased, and entangles knowledge with reasoning. **NCA pre-pre-training** first trains a transformer on dynamics from neural cellular automata, then continues with standard language pre-training. With 164M NCA tokens, the paper reports up to 6% downstream improvement and 1.6× faster convergence vs. 1.6B tokens of C4 as pre-pre-training.
 
-## Repository Structure
+## Repository layout
 
 ```
 .
+├── pyproject.toml          # uv-managed dependencies
 ├── src/
-│   ├── nca_ppt.py              - NCA pre-pre-training (data generation + transformer training)
-│   ├── language_train.py       - Language pre-training and instruction fine-tuning (HF datasets)
-│   ├── openwebtext_pt.py       - OpenWebText-specific pre-training
-│   ├── datasets/
-│   │   └── preprocess.py       - Dataset tokenization & preprocessing
-│   └── eval/
-│       ├── bigbench.py         - BigBench-Lite evaluation (pass@k, few-shot)
-│       ├── humaneval.py        - HumanEval code generation evaluation (pass@k)
-│       ├── gsm8k.py            - GSM8K math reasoning evaluation (pass@k)
-│       └── bbl_prompts.json    - Few-shot prompts for BigBench-Lite
+│   ├── model.py            # Flax Llama (RMSNorm, RoPE, SwiGLU)
+│   ├── train_nca.py        # Stage 1: NCA pre-pretraining on 8 TPU chips
+│   └── train_lm.py         # Stage 2: language pretraining (warm-start from NCA ckpt)
 ├── utils/
-│   ├── nca.py                  - NCA model definitions (JAX/Flax)
-│   ├── models.py               - Llama-based language model definitions
-│   ├── dataset_utils.py        - Dataset loading & batching utilities
-│   ├── tokenizers.py           - Tokenizer wrappers (tiktoken, JAX)
-│   ├── training_args.py        - Shared training argument dataclasses
-│   └── util.py                 - General helpers (seeding, logging, checkpointing)
-├── scripts/
-│   ├── prepretraining/
-│   │   └── nca_prepretraining.sh       - Launch NCA pre-pre-training
-│   ├── pretraining/
-│   │   ├── owt_ft.sh                   - Launch OpenWebText pre-training
-│   │   └── ft_codeparrot.sh            - Launch CodeParrot pre-training
-│   ├── instruction-ft/
-│   │   ├── ft_instruction_gsm8k.sh     - Fine-tune on GSM8K (math)
-│   │   └── ft_instruction_bbl.sh       - Fine-tune on BigBench-Lite (reasoning)
-│   └── eval/
-│       ├── eval_gsm8k.sh               - Evaluate on GSM8K
-│       ├── eval_humaneval.sh           - Evaluate on HumanEval
-│       └── eval_bbl.sh                 - Evaluate on BigBench-Lite
-├── README.md
-├── requirements.txt            - pip dependencies
-└── environment.yml             - Conda environment spec
+│   ├── nca.py              # NCA dynamics + rule sampling/filtering (JAX)
+│   └── tokenizers.py       # Patch-based NCA tokenizer
+└── scripts/
+    ├── train_nca.sh
+    └── train_lm.sh
 ```
 
-## Setup
+## Setup (uv + TPU)
+
+Install [`uv`](https://docs.astral.sh/uv/) if you don't already have it:
 
 ```bash
-mamba env create -f environment.yml
-mamba activate ai2
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-## Usage
-
-### 1. NCA Pre-Pre-Training
-
-NCA pre-pre-training generates synthetic data on-the-fly by sampling random NCA transition rules and rolling out their dynamics. The transformer is trained with next-token prediction on the serialized grid trajectories.
+Install dependencies into a local `.venv`:
 
 ```bash
-scripts/prepretraining/nca_prepretraining.sh
+cd nca-pre-pretraining-jax
+uv sync --extra tpu
 ```
 
-**Key hyperparameters:**
+This pulls `jax[tpu]` (TPU-backed JAX), Flax, Optax, Orbax, and the HuggingFace datasets/tokenizers used by stage 2. Verify the TPUs are visible:
 
-| Argument | Description | Default |
+```bash
+uv run python -c "import jax; print(jax.devices())"
+# Expected: [TpuDevice(id=0, ...), ..., TpuDevice(id=7, ...)]
+```
+
+## Parallelism
+
+A single `jax.jit`'d training step runs on a `Mesh` with one axis `"data"` of size `len(jax.devices())`. Parameters are fully replicated; the global batch is sharded along the `"data"` axis using `NamedSharding(mesh, P("data"))`. On this 8-chip host, a `--batch_size 128` run puts 16 examples per chip.
+
+No manual `pmap` — the training function is `jit` + sharded inputs, which lets XLA insert the all-reduce for gradients automatically.
+
+## Stage 1 — NCA pre-pretraining
+
+```bash
+./scripts/train_nca.sh
+```
+
+The loop:
+
+1. Samples NCA rules (optionally filtered by gzip-compression complexity band — default 50–100%).
+2. Generates a pool of rollouts in JAX (`utils/nca.generate_nca_dataset`).
+3. Tokenizes with `NCA_Tokenizer(patch=2, num_colors=10)` → vocab of `10^4 + 2 = 10002`.
+4. Trains a 24-layer, 2048-hidden Llama with AdamW + warmup-cosine.
+
+Important flags (see `src/train_nca.py:TrainConfig` for the full list):
+
+| flag | meaning | default |
 |---|---|---|
-| `--num_colors` | NCA alphabet size (state space) | `10` |
-| `--filter_rules_threshold` | Lower bound on gzip compression ratio for filtering rules (0–100%). Higher values select more complex, less compressible NCA dynamics. | `0.5` |
-| `--filter_rules_upper_bound` | Upper bound on gzip compression ratio. Together with `--filter_rules_threshold`, this defines the complexity band (e.g. `0.5 1.0` = 50%+ band) | `1.0` |
-| `--filter_rules_mode` | Complexity measure used for filtering. Use `gzip` (proxy for Kolmogorov complexity) | `gzip` |
-| `--grid` | NCA grid size (H=W). Paper uses a 12×12 grid. | `12` |
-| `--patch` | Patch size for tokenization (2×2 → 10⁴ vocabulary for num_colors = 10). | `2` |
-| `--train_num_rules` | Number of unique NCA rules (i.e., distinct functions) in the training set. Default value is set to ensure every sampled trajectory is a different rule. | `16000` |
-| `--generate_rules` | Re-sample the training rule set every N epochs (requires `--generate_train`). Setting to `1` draws a fresh set of rules each epoch; larger values reuse the same rules for longer before regenerating. | `1` |
-| `--train_num_sim` | Number of trajectory simulations sampled per rule. | `500` |
-| `--num_epochs` | Training epochs i.e. re-sampling of rules. | `100` |
-| `--learning_rate` | Pre-pre-training learning rate. | `1e-4` |
+| `--grid`, `--patch`, `--num_colors` | NCA state space | 12 / 2 / 10 |
+| `--filter_rules_threshold`, `--filter_rules_upper_bound` | gzip complexity band for rule filtering | 0.5 / 1.0 |
+| `--train_num_rules` | distinct rules in training pool | 16000 |
+| `--sims_per_refill` | simulations generated per host refill | 4096 |
+| `--batch_size` | global batch (split across 8 chips) | 128 |
+| `--steps` | total optimizer steps | 20000 |
 
-**Targeting a downstream domain:** The optimal complexity band varies by domain. Use higher-complexity NCA (50%+ gzip) for web text and math; intermediate complexity (30–40% gzip) for code. Adjust `--filter_rules_threshold` and `--filter_rules_upper_bound` accordingly.
+Checkpoints (Orbax) land in `checkpoints/nca/step_*` and `checkpoints/nca/final`.
 
----
+## Stage 2 — language pretraining
 
-### 2. Language Pre-Training
-
-After NCA pre-pre-training, transfer the model weights to a language pre-training run. Embedding layers are re-initialized for the natural language vocabulary; all other weights are carried over.
-
-**OpenWebText:**
 ```bash
-scripts/pretraining/owt_ft.sh
+./scripts/train_lm.sh --nca_ckpt checkpoints/nca/final
 ```
 
-**CodeParrot:**
-```bash
-scripts/pretraining/ft_codeparrot.sh
-```
+Streams `Skylion007/openwebtext` through GPT-2's tokenizer, packs to `seq_len=1024`, and trains the same architecture with a language-sized vocab (50304). If `--nca_ckpt` is given, transformer blocks (attention/MLP/norms) are loaded from the stage-1 checkpoint; the embedding and LM head are fresh.
 
-Both scripts call into `src/language_train.py` or `src/openwebtext_pt.py` and accept a `--model_path` / `--model_file` pointing to the NCA pre-pre-trained checkpoint. Set `--reinit_modules embed none` to re-initialize the embedding layers while retaining all other weights. These scripts can also be used for pre-pretraining on other datasets.
+## Porting notes
 
-**Key hyperparameters:**
+Things that moved:
 
-| Argument | Description |
-|---|---|
-| `--model_path` / `--model_file` | Path to the NCA pre-pre-trained checkpoint directory and file. |
-| `--reinit_modules embed none` | Re-initialize embedding layers; transfer all other weights |
-| `--lr` | Pre-training learning rate. Default set to `5e-4` for math/web text, `2e-4` for code. |
-| `--epochs` | Train for a single epoch over the corpus (standard for large-scale pre-training). |
-| `--grad_accumulation_steps` | Effective batch size multiplier. Paper uses an effective batch size of 512. |
+- `utils/models.py` (PyTorch Llama wrapper) → `src/model.py` (Flax `linen.Module`).
+- `utils/dataset_utils.py`, `src/openwebtext_pt.py`, `src/language_train.py` → `src/train_lm.py` streaming loop.
+- `src/nca_ppt.py` (torch DDP + torch Dataset) → `src/train_nca.py` with sharded `jax.jit`.
+- `environment.yml` / `requirements.txt` / mamba → `pyproject.toml` + uv.
+- `utils/training_args.py` (1000-line dataclass hierarchy + argparse) → single `tyro.cli(TrainConfig)` per entry point.
 
----
+Things preserved verbatim (because they were already JAX):
 
-### 3. Downstream Fine-Tuning
-
-For GSM8K and BigBench-Lite, fine-tune the pre-trained model on the respective training sets before evaluation. HumanEval is evaluated directly without fine-tuning (code completion).
-
-**GSM8K (math reasoning):**
-```bash
-scripts/instruction-ft/ft_instruction_gsm8k.sh
-```
-Trains for 10 epochs on Chain-of-Thought traces at `lr=1e-5`.
-
-**BigBench-Lite (reasoning):**
-```bash
-scripts/instruction-ft/ft_instruction_bbl.sh
-```
-Trains for 1 epoch at `lr=5e-6`. Tasks are sampled with `--min_samples 100 --max_samples 350` per category.
-
----
-
-### 4. Evaluation
-
-All evaluation scripts compute pass@k using the unbiased estimator from Chen et al. (2021) over 64 decodings per prompt. Results are saved to `--save_path`.
-
-**GSM8K:**
-```bash
-scripts/eval/eval_gsm8k.sh
-```
-
-**HumanEval:**
-```bash
-scripts/eval/eval_humaneval.sh
-```
-
-**BigBench-Lite:**
-```bash
-scripts/eval/eval_bbl.sh
-```
-
-Common evaluation arguments:
-
-| Argument | Description | Default |
-|---|---|---|
-| `--passes` | Total number of decodings per prompt | `64` |
-| `--eval_passes` | Values of k to report pass@k | 1 2 4 8 16 32 |
-| `--temperature` | Sampling temperature | `0.4`. |
-| `--top_p` | Nucleus sampling threshold | `0.95`. |
-
----
+- `utils/nca.py` — NCA substrate, rollout, rule filtering.
+- The gzip-based complexity filter and tokenizer math.
 
 ## Citation
 
 ```bibtex
 @misc{lee2026traininglanguagemodelsneural,
-      title={Training Language Models via Neural Cellular Automata}, 
-      author={Dan Lee and Seungwook Han and Akarsh Kumar and Pulkit Agrawal},
-      year={2026},
-      eprint={2603.10055},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2603.10055}, 
+  title={Training Language Models via Neural Cellular Automata},
+  author={Dan Lee and Seungwook Han and Akarsh Kumar and Pulkit Agrawal},
+  year={2026},
+  eprint={2603.10055},
+  archivePrefix={arXiv},
+  primaryClass={cs.LG},
+  url={https://arxiv.org/abs/2603.10055},
 }
 ```
