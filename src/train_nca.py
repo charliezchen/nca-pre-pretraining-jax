@@ -30,9 +30,9 @@ import tyro
 from flax.training import train_state
 from jax.sharding import Mesh, NamedSharding, PartitionSpec as P
 
+from .checkpointing import save_checkpoint
 from utils.nca import generate_nca_dataset, generate_rules_batch
 from utils.tokenizers import NCA_Tokenizer
-
 from .model import Llama, LlamaConfig
 
 
@@ -363,12 +363,12 @@ def main(c: TrainConfig):
 
         if step % c.ckpt_every == 0:
             path = os.path.abspath(os.path.join(c.save_dir, f"step_{step}"))
-            ckptr.save(path, args=ocp.args.StandardSave(state.params))
+            save_checkpoint(ckptr, path, state.params)
             print(f"           | saved {path}")
 
     # final save
     path = os.path.abspath(os.path.join(c.save_dir, "final"))
-    ckptr.save(path, args=ocp.args.StandardSave(state.params))
+    save_checkpoint(ckptr, path, state.params)
     print(f"done. final checkpoint: {path}")
 
 

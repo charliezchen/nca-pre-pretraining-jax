@@ -24,6 +24,7 @@ import tyro
 from flax.training import train_state
 from jax.sharding import Mesh, NamedSharding, PartitionSpec as P
 
+from .checkpointing import restore_checkpoint, save_checkpoint
 from .model import Llama, LlamaConfig
 from .train_nca import get_dtype, loss_fn
 
@@ -168,8 +169,7 @@ def main(c: LMConfig):
     if c.nca_ckpt:
         print(f"Loading NCA checkpoint from {c.nca_ckpt}")
         ckptr = ocp.StandardCheckpointer()
-        nca_params = ckptr.restore(os.path.abspath(c.nca_ckpt),
-                                   args=ocp.args.StandardRestore(params))
+        nca_params = restore_checkpoint(ckptr, os.path.abspath(c.nca_ckpt), params)
         params = _transfer_nca_params(params, nca_params)
         print("Transferred transformer weights; re-initialized embed + lm_head.")
 
@@ -222,11 +222,11 @@ def main(c: LMConfig):
 
         if step % c.ckpt_every == 0:
             path = os.path.abspath(os.path.join(c.save_dir, f"step_{step}"))
-            ckptr.save(path, args=ocp.args.StandardSave(state.params))
+            save_checkpoint(ckptr, path, state.params)
             print(f"           | saved {path}")
 
     path = os.path.abspath(os.path.join(c.save_dir, "final"))
-    ckptr.save(path, args=ocp.args.StandardSave(state.params))
+    save_checkpoint(ckptr, path, state.params)
     print(f"done. final checkpoint: {path}")
 
 
