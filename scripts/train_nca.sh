@@ -2,7 +2,6 @@
 # NCA pre-pretraining on 8 TPU chips (single host, data parallel).
 set -euo pipefail
 
-export XLA_FLAGS="--xla_tpu_enable_latency_hiding_scheduler=true"
 
 uv run python -m src.train_nca \
     --grid 12 \
@@ -13,7 +12,7 @@ uv run python -m src.train_nca \
     --val_batch_size 128 \
     --hidden_size 2048 \
     --intermediate_size 8192 \
-    --num_layers 24 \
+    --num_layers 12 \
     --num_heads 32 \
     --lr 1e-4 \
     --warmup_steps 500 \

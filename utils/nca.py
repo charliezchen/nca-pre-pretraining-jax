@@ -234,8 +234,16 @@ def generate_nca_dataset(
     if(rule_seeds is None):
         rule_seeds = jax.random.split(seed, num_rules)
     else:
-        rule_seeds = jnp.tile(rule_seeds, (num_sims // num_rules, 1))
-        rule_seeds = jnp.concat([rule_seeds, rule_seeds[:(num_sims - rule_seeds.shape[0])]], axis=0)
+        n_rules = rule_seeds.shape[0]
+        if num_sims <= n_rules:
+            # round-robin a contiguous slice so the same sim index repeatedly
+            # pairs with the same rule across refills is avoided via the
+            # caller reshuffling indices.
+            pick = jax.random.randint(seed, (num_sims,), 0, n_rules)
+            rule_seeds = rule_seeds[pick]
+        else:
+            reps = (num_sims + n_rules - 1) // n_rules
+            rule_seeds = jnp.tile(rule_seeds, (reps, 1))[:num_sims]
 
     # generate simulations
     def rollout_fn(rng, task_seed):
