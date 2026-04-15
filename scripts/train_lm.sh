@@ -8,12 +8,13 @@ uv run python -m src.train_lm \
     --seq_len 1024 \
     --batch_size 128 \
     --vocab_size 50304 \
-    --hidden_size 2048 \
-    --intermediate_size 8192 \
+    --hidden_size 768 \
+    --intermediate_size 3072 \
     --num_layers 12 \
-    --num_heads 32 \
+    --num_heads 6 \
     --lr 3e-4 \
     --warmup_steps 1000 \
-    --steps 50000 \
+    --steps 12000 \
     --save_dir checkpoints/lm \
+    --wandb --wandb_name lm --wandb_project nca-pre-pretraining-jax \
     "$@"

@@ -20,6 +20,7 @@ dependencies = [
     "tiktoken>=0.7",
     "pyyaml>=6.0",
     "tyro>=0.8",
+    "tpu-info",
 ]
 
 [project.optional-dependencies]
