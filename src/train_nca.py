@@ -45,9 +45,9 @@ class TrainConfig:
     patch: int = 2
     num_colors: int = 10
     identity_bias: float = 0.0
-    temperature: float = 1.0
-    dT: int = 2
-    init_rollout_steps: int = 0
+    temperature: float = 1e-4
+    dT: int = 1
+    init_rollout_steps: int = 10
     train_num_rules: int = 16000
     val_num_rules: int = 1000
     filter_rules: bool = True
